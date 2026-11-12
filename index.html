@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="th" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>Room Climate Monitor - Web App</title>
+
+  <!-- PWA Metadata & Icons -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ClimateApp" />
+  <link rel="icon" type="image/svg+xml" href="icons/favicon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- Google Fonts: Kanit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Kanit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom App Styles -->
+  <link rel="stylesheet" href="css/app.css?v=14" />
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen pb-20 md:pb-8">
+
+  <!-- Top App Bar / Header -->
+  <header class="sticky top-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+    <div class="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-500 to-cyan-400 p-0.5 shadow-md flex items-center justify-center shrink-0">
+          <img src="icons/favicon.svg" alt="App Logo" class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg" />
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white leading-tight">
+            Climate Monitor
+          </h1>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <!-- Live Connection Badge (Tesla/Apple Style Status Pill) -->
+        <span id="connectionBadge" class="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs transition-all duration-300">
+          <span class="w-2 h-2 mr-1.5 rounded-full bg-emerald-500 animate-pulse shadow-xs"></span>
+          ออนไลน์
+        </span>
+
+        <!-- Refresh Data Button -->
+        <button id="refreshBtn" title="รีเฟรชข้อมูลตอนนี้" class="p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition active:scale-95">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+
+        <!-- Dark / Light Theme Toggle -->
+        <button id="themeToggleBtn" title="เปลี่ยนโหมดสี" class="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-800 rounded-xl transition duration-200 overflow-hidden active:scale-95">
+          <!-- Sun Icon (Active in Dark Mode) -->
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <!-- Moon Icon (Active in Light Mode) -->
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Desktop Navigation Tab Bar -->
+    <div id="desktopTabBar" class="hidden md:flex max-w-6xl mx-auto px-4 border-t border-slate-100 dark:border-slate-800 gap-6 relative">
+      <button data-tab="overview" class="tab-btn active py-2.5 text-sm font-medium flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+        <span>📊</span> แดชบอร์ดภาพรวม
+      </button>
+      <button data-tab="analytics" class="tab-btn py-2.5 text-sm font-medium flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+        <span>📈</span> กราฟแนวโน้ม (Analytics)
+      </button>
+      <button data-tab="history" class="tab-btn py-2.5 text-sm font-medium flex items-center gap-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+        <span>📋</span> บันทึกประวัติ & ส่งออก
+      </button>
+      <!-- Smooth Gliding Active Indicator Line -->
+      <span id="tabGlider" class="tab-glider"></span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- ============================================================
+         TAB 1: 📊 OVERVIEW PANEL
+         ============================================================ -->
+    <section id="tab-overview" class="tab-pane tab-pane-show space-y-6">
+
+      <!-- Realtime Status Banner -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 rounded-2xl glass-card gap-3.5">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-800/50 shadow-inner">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          </div>
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100">สถานะสภาพแวดล้อม</h2>
+            <p id="lastUpdatedText" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">กำลังเชื่อมต่อข้อมูล...</p>
+          </div>
+        </div>
+        <div id="comfortBadge" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors shadow-xs">
+          รอวิเคราะห์ข้อมูล
+        </div>
+      </div>
+
+      <!-- Core Metrics Cards Grid (4 Cards: 2x2 on Mobile, 4x1 on Tablet/Desktop) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        
+        <!-- Card 1: Temperature -->
+        <div class="glass-card card-glow-rose rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 truncate">อุณหภูมิห้อง</span>
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-500 border border-rose-100 dark:border-rose-900/40 flex items-center justify-center shrink-0 shadow-inner">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0a3 3 0 100 6 3 3 0 000-6zm0 0V6a2 2 0 00-4 0v9.5a5 5 0 108 0V6a2 2 0 00-4 0z"/></svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="tempValue" class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">--</span>
+              <span class="text-sm sm:text-base font-semibold text-rose-500">°C</span>
+              <div id="tempDelta" class="ml-auto text-[10px] sm:text-xs font-medium"></div>
+            </div>
+            <!-- Micro Progress Meter (Range 15°C - 45°C) -->
+            <div class="metric-progress-track">
+              <div id="tempProgressBar" class="metric-progress-fill bg-gradient-to-r from-rose-400 to-rose-600" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] sm:text-xs">
+            <span class="text-slate-400">สถานะ:</span>
+            <span id="tempStatus" class="font-medium text-slate-700 dark:text-slate-200 truncate ml-1">รอข้อมูล</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Humidity -->
+        <div class="glass-card card-glow-sky rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 truncate">ความชื้นสัมพัทธ์</span>
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-500 border border-sky-100 dark:border-sky-900/40 flex items-center justify-center shrink-0 shadow-inner">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="humidValue" class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">--</span>
+              <span class="text-sm sm:text-base font-semibold text-sky-500">%</span>
+              <div id="humidDelta" class="ml-auto text-[10px] sm:text-xs font-medium"></div>
+            </div>
+            <!-- Micro Progress Meter (Range 0% - 100%) -->
+            <div class="metric-progress-track">
+              <div id="humidProgressBar" class="metric-progress-fill bg-gradient-to-r from-sky-400 to-blue-600" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] sm:text-xs">
+            <span class="text-slate-400">ระดับ:</span>
+            <span id="humidStatus" class="font-medium text-slate-700 dark:text-slate-200 truncate ml-1">รอข้อมูล</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Heat Index (Feels Like) -->
+        <div class="glass-card card-glow-amber rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 truncate">รู้สึกจริง (Heat Index)</span>
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-500 border border-amber-100 dark:border-amber-900/40 flex items-center justify-center shrink-0 shadow-inner">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="heatIndexValue" class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">--</span>
+              <span class="text-sm sm:text-base font-semibold text-amber-500">°C</span>
+            </div>
+            <!-- Indicator note -->
+            <div class="mt-2 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
+              อิงผลกระทบจากความชื้น
+            </div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] sm:text-xs">
+            <span class="text-slate-400">การสัมผัส:</span>
+            <span class="font-medium text-slate-700 dark:text-slate-200">ตามร่างกาย</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Dew Point -->
+        <div class="glass-card card-glow-cyan rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2 sm:mb-3">
+            <span class="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 truncate">จุดน้ำค้าง (Dew Point)</span>
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-500 border border-cyan-100 dark:border-cyan-900/40 flex items-center justify-center shrink-0 shadow-inner">
+              <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="dewPointValue" class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">--</span>
+              <span class="text-sm sm:text-base font-semibold text-cyan-500">°C</span>
+            </div>
+            <!-- Indicator note -->
+            <div class="mt-2 text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">
+              อุณหภูมิไอน้ำกลั่นตัว
+            </div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] sm:text-xs">
+            <span class="text-slate-400">สูตร:</span>
+            <span class="font-medium text-slate-700 dark:text-slate-200">Magnus-Tetens</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Summary Statistics Panel -->
+      <div class="glass-card rounded-2xl p-4 sm:p-6">
+        <h3 class="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 sm:mb-4 flex items-center gap-2">
+          <span>📊</span> สถิติสรุปจากชุดข้อมูลปัจจุบัน
+        </h3>
+        <div class="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3 text-center">
+          
+          <div class="p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <span class="text-[10px] sm:text-xs text-slate-400 block mb-0.5">🔥 สูงสุด</span>
+            <span id="statMaxTemp" class="text-sm sm:text-base md:text-lg font-bold text-rose-600 dark:text-rose-400 tabular-nums">--</span>
+          </div>
+
+          <div class="p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <span class="text-[10px] sm:text-xs text-slate-400 block mb-0.5">❄️ ต่ำสุด</span>
+            <span id="statMinTemp" class="text-sm sm:text-base md:text-lg font-bold text-blue-600 dark:text-blue-400 tabular-nums">--</span>
+          </div>
+
+          <div class="p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <span class="text-[10px] sm:text-xs text-slate-400 block mb-0.5">⚖️ เฉลี่ย</span>
+            <span id="statAvgTemp" class="text-sm sm:text-base md:text-lg font-bold text-amber-600 dark:text-amber-400 tabular-nums">--</span>
+          </div>
+
+          <div class="p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <span class="text-[10px] sm:text-xs text-slate-400 block mb-0.5">💧 ชื้นสูงสุด</span>
+            <span id="statMaxHumid" class="text-sm sm:text-base md:text-lg font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">--</span>
+          </div>
+
+          <div class="p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <span class="text-[10px] sm:text-xs text-slate-400 block mb-0.5">🌵 ชื้นต่ำสุด</span>
+            <span id="statMinHumid" class="text-sm sm:text-base md:text-lg font-bold text-cyan-600 dark:text-cyan-400 tabular-nums">--</span>
+          </div>
+
+          <div class="p-2 sm:p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/80">
+            <span class="text-[10px] sm:text-xs text-slate-400 block mb-0.5">🌫️ ชื้นเฉลี่ย</span>
+            <span id="statAvgHumid" class="text-sm sm:text-base md:text-lg font-bold text-teal-600 dark:text-teal-400 tabular-nums">--</span>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================
+         TAB 2: 📈 ANALYTICS PANEL (CHART)
+         ============================================================ -->
+    <section id="tab-analytics" class="tab-pane space-y-6 hidden">
+      <div class="glass-card rounded-2xl p-6 shadow-sm">
+        
+        <!-- Chart Controls -->
+        <div class="flex flex-col gap-3 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+          
+          <!-- Row 1: Title, Data Type Filters & Action Buttons -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                📈 กราฟแนวโน้มอุณหภูมิและความชื้น
+              </h2>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Filter buttons (All, Temp, Humid) -->
+              <div class="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-800 text-xs">
+                <button data-filter="all" class="chart-filter-btn px-2.5 py-1 rounded-md bg-indigo-600 text-white font-medium transition">ทั้งหมด</button>
+                <button data-filter="temp" class="chart-filter-btn px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 transition">อุณหภูมิ</button>
+                <button data-filter="humid" class="chart-filter-btn px-2.5 py-1 rounded-md text-slate-600 dark:text-slate-300 transition">ความชื้น</button>
+              </div>
+
+              <!-- Reload Chart Button -->
+              <button id="reloadChartBtn" title="รีเฟรชข้อมูลกราฟ" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>รีเฟรชกราฟ</span>
+              </button>
+
+              <!-- Download Chart Image Button -->
+              <button id="downloadChartBtn" title="บันทึกรูปภาพกราฟ" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg transition flex items-center gap-1.5 shadow-xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>บันทึกภาพ</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Date & Time Selector Toolbar -->
+          <div class="flex flex-wrap items-center gap-2.5 pt-2 text-xs bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+            <!-- Mode Dropdown -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-500 dark:text-slate-400 font-medium">ช่วงข้อมูล:</span>
+              <select id="chartViewModeSelect" class="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 font-medium cursor-pointer">
+                <option value="custom" selected>📅 เลือกวันที่ & เวลา</option>
+                <option value="all">ข้อมูลทั้งหมด</option>
+                <option value="latest10">10 จุดล่าสุด</option>
+                <option value="latest20">20 จุดล่าสุด</option>
+                <option value="latest50">50 จุดล่าสุด</option>
+              </select>
+            </div>
+
+            <!-- Custom Date & Time Inputs (แสดงขึ้นมาให้เลือกทันที) -->
+            <div id="customDateTimeContainer" class="flex flex-wrap items-center gap-2">
+              <!-- Date Picker -->
+              <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span class="text-slate-400 text-[11px]">📅 วันที่:</span>
+                <input type="date" id="chartDateInput" class="text-xs bg-transparent border-none text-slate-700 dark:text-slate-200 focus:outline-none p-0 cursor-pointer" />
+              </div>
+
+              <!-- Time Range Pickers -->
+              <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                <span class="text-slate-400 text-[11px]">⏰ เวลา:</span>
+                <input type="time" id="chartStartTimeInput" title="เวลาเริ่มต้น" class="text-xs bg-transparent border-none text-slate-700 dark:text-slate-200 focus:outline-none p-0 cursor-pointer" />
+                <span class="text-slate-400 text-xs">ถึง</span>
+                <input type="time" id="chartEndTimeInput" title="เวลาสิ้นสุด" class="text-xs bg-transparent border-none text-slate-700 dark:text-slate-200 focus:outline-none p-0 cursor-pointer" />
+              </div>
+
+              <!-- Filter Button -->
+              <button id="applyCustomFilterBtn" type="button" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition shadow-xs">
+                กรองข้อมูล
+              </button>
+
+              <!-- Reset Button -->
+              <button id="resetCustomFilterBtn" type="button" class="px-2 py-1 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                ล้างตัวกรอง
+              </button>
+            </div>
+
+            <!-- Total Data Points Badge -->
+            <span id="chartFilteredCount" class="ml-auto text-xs text-slate-400 font-medium">
+              กำลังเตรียมข้อมูล...
+            </span>
+          </div>
+
+        </div>
+
+        <!-- Canvas Container with Loading Overlay -->
+        <div class="relative w-full h-72 sm:h-80 md:h-96 chart-canvas-container">
+          <!-- Loading Overlay -->
+          <div id="chartLoadingOverlay" class="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs rounded-xl flex flex-col items-center justify-center gap-2 z-10 transition-opacity duration-200">
+            <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-xs font-medium text-slate-600 dark:text-slate-300">กำลังโหลดข้อมูลกราฟ...</p>
+          </div>
+
+          <!-- Error / Empty State -->
+          <div id="chartErrorState" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xs rounded-xl flex flex-col items-center justify-center gap-2 z-10 text-center p-4">
+            <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg font-bold">!</div>
+            <p id="chartErrorMessage" class="text-xs font-medium text-slate-600 dark:text-slate-300">ไม่สามารถโหลดข้อมูลกราฟได้</p>
+            <button id="retryChartBtn" class="mt-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition shadow-sm">ลองใหม่อีกครั้ง</button>
+          </div>
+
+          <canvas id="historyChart"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================
+         TAB 3: 📋 HISTORY & EXPORT PANEL
+         ============================================================ -->
+    <section id="tab-history" class="tab-pane space-y-6 hidden">
+      <div class="glass-card rounded-2xl p-6 shadow-sm">
+        
+        <!-- Toolbar & Export Actions -->
+        <div class="flex flex-col gap-3 pb-4 mb-4 border-b border-slate-100 dark:border-slate-800">
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                📋 บันทึกประวัติข้อมูล (History Log)
+              </h2>
+              <p class="text-xs text-slate-400">ดึงข้อมูลทั้งหมดจาก Google Sheets ค้นหา และส่งออกข้อมูล</p>
+            </div>
+
+            <!-- Export CSV -->
+            <button id="exportCsvBtn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg shadow-sm transition flex items-center gap-1.5 whitespace-nowrap">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>ส่งออก CSV (Excel)</span>
+            </button>
+          </div>
+
+          <!-- Date & Time Filter Bar for History Table -->
+          <div class="flex flex-wrap items-center gap-2.5 pt-2 text-xs bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+            <!-- Date Picker -->
+            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+              <span class="text-slate-400 text-[11px]">📅 เลือกวันที่:</span>
+              <input type="date" id="historyDateInput" class="text-xs bg-transparent border-none text-slate-800 dark:text-slate-200 focus:outline-none p-0 cursor-pointer" />
+            </div>
+
+            <!-- Time Range Pickers -->
+            <div class="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+              <span class="text-slate-400 text-[11px]">⏰ เวลา:</span>
+              <input type="time" id="historyStartTimeInput" title="เวลาเริ่มต้น" class="text-xs bg-transparent border-none text-slate-800 dark:text-slate-200 focus:outline-none p-0 cursor-pointer" />
+              <span class="text-slate-400 text-xs">ถึง</span>
+              <input type="time" id="historyEndTimeInput" title="เวลาสิ้นสุด" class="text-xs bg-transparent border-none text-slate-800 dark:text-slate-200 focus:outline-none p-0 cursor-pointer" />
+            </div>
+
+            <!-- Keyword Search -->
+            <div class="relative flex-1 sm:w-40 min-w-[120px]">
+              <input type="text" id="historySearchInput" placeholder="ค้นหาคำ..." class="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-7 pr-2 py-1.5 text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500" />
+              <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+
+            <!-- Reset Filter Button -->
+            <button id="resetHistoryFilterBtn" type="button" class="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition">
+              ล้างตัวกรอง
+            </button>
+
+            <!-- Row Count Badge -->
+            <span id="historyRowCountBadge" class="ml-auto text-xs text-slate-400 font-medium">
+              กำลังโหลดข้อมูล...
+            </span>
+          </div>
+
+        </div>
+
+        <!-- Data Table (with sticky header and touch scroll) -->
+        <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 dark:border-slate-800">
+          <table class="w-full text-left text-sm">
+            <thead class="sticky top-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 z-10">
+              <tr>
+                <th class="px-3 sm:px-4 py-2.5 sm:py-3 w-10 sm:w-12 text-center">#</th>
+                <th class="px-3 sm:px-4 py-2.5 sm:py-3">วันและเวลาที่บันทึก (Timestamp)</th>
+                <th class="px-3 sm:px-4 py-2.5 sm:py-3">อุณหภูมิ (°C)</th>
+                <th class="px-3 sm:px-4 py-2.5 sm:py-3">ความชื้นสัมพัทธ์ (%)</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 text-xs sm:text-sm">
+              <tr>
+                <td colspan="4" class="px-4 py-8 text-center text-slate-400">กำลังโหลดข้อมูล...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       MOBILE BOTTOM NAVIGATION BAR (Touch & Safe Area Optimized)
+       ============================================================ -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 py-1.5 sm:py-2 px-2 sm:px-6 flex items-center justify-around shadow-lg">
+    <button data-tab="overview" class="bottom-nav-btn active flex flex-col items-center justify-center flex-1 py-1 gap-0.5 text-indigo-600 dark:text-indigo-400">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      <span class="text-[10px] sm:text-[11px] font-medium leading-none">ภาพรวม</span>
+    </button>
+    <button data-tab="analytics" class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 gap-0.5 text-slate-400">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+      <span class="text-[10px] sm:text-[11px] font-medium leading-none">กราฟ</span>
+    </button>
+    <button data-tab="history" class="bottom-nav-btn flex flex-col items-center justify-center flex-1 py-1 gap-0.5 text-slate-400">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      <span class="text-[10px] sm:text-[11px] font-medium leading-none">ประวัติ</span>
+    </button>
+  </nav>
+
+  <!-- App Core Scripts -->
+  <script src="js/api.js?v=14"></script>
+  <script src="js/chart.js?v=14"></script>
+  <script src="js/app.js?v=14"></script>
+</body>
+</html>
