@@ -442,15 +442,116 @@ class ChartController {
     this.chart.update();
   }
 
-  downloadImage(filename = 'climate-chart.png') {
-    if (!this.chart) {
+  async downloadImage(filename = 'climate-chart.png') {
+    if (!this.chart || !this.chart.canvas) {
       alert('กราฟยังไม่พร้อมสำหรับการบันทึกภาพ');
       return;
     }
+
+    try {
+      const srcCanvas = this.chart.canvas;
+      const isDark = document.documentElement.classList.contains('dark');
+
+      // 1. สร้าง Canvas ความละเอียดสูงและเติมพื้นหลังสีทึบ (ป้องกันภาพพื้นหลังดำ/ใสใน iPad Photos)
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = srcCanvas.width;
+      exportCanvas.height = srcCanvas.height;
+      const ctx = exportCanvas.getContext('2d');
+
+      // เติมสีพื้นหลังตามธีมเพื่อความสวยงาม
+      ctx.fillStyle = isDark ? '#0b0f19' : '#ffffff';
+      ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+      // วาดกราฟลงบนพื้นหลัง
+      ctx.drawImage(srcCanvas, 0, 0);
+
+      // ตรวจสอบว่าเป็นอุปกรณ์ iPad / iPhone / iOS หรือไม่
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      // 2. แปลงเป็น Blob
+      exportCanvas.toBlob(async (blob) => {
+        if (!blob) {
+          this.fallbackDownload(exportCanvas.toDataURL('image/png'), filename, isIOS);
+          return;
+        }
+
+        const file = new File([blob], filename, { type: 'image/png' });
+
+        // 3. ใช้ Web Share API สำหรับ iPad / iPhone (เปิดหน้าต่างบันทึกภาพลง Photos หรือ AirDrop โดยตรง)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: 'กราฟสภาพแวดล้อม',
+              text: 'กราฟแนวโน้มอุณหภูมิและความชื้น',
+              files: [file]
+            });
+            return;
+          } catch (shareErr) {
+            if (shareErr.name === 'AbortError') return; // ผู้ใช้กดยกเลิก
+            console.warn('Share API error, trying alternative:', shareErr);
+          }
+        }
+
+        // 4. วิธีมาตรฐานสำหรับเบราว์เซอร์ทั่วไป
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = objectUrl;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(objectUrl);
+        }, 500);
+
+      }, 'image/png', 1.0);
+
+    } catch (err) {
+      console.error('Download chart image error:', err);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const dataUrl = this.chart.toBase64Image('image/png', 1);
+      this.fallbackDownload(dataUrl, filename, isIOS);
+    }
+  }
+
+  fallbackDownload(dataUrl, filename, isIOS) {
+    if (isIOS) {
+      // สำหรับ iPad ที่เบราว์เซอร์บล็อกการดาวน์โหลดอัตโนมัติ ให้เปิดภาพขึ้นมาให้แตะค้างบันทึก
+      const win = window.open();
+      if (win) {
+        win.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>${filename}</title>
+            <style>
+              body { margin: 0; background: #0f172a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; box-sizing: border-box; text-align: center; }
+              img { max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+              .tip { margin-top: 16px; font-size: 14px; color: #94a3b8; background: rgba(255,255,255,0.08); padding: 10px 18px; border-radius: 20px; }
+            </style>
+          </head>
+          <body>
+            <img src="${dataUrl}" alt="Climate Chart" />
+            <div class="tip">💡 แตะที่รูปภาพค้างไว้ แล้วเลือก <b>"บันทึกไปยังแอปรูปภาพ (Save Image)"</b></div>
+          </body>
+          </html>
+        `);
+        return;
+      }
+    }
+
     const link = document.createElement('a');
     link.download = filename;
-    link.href = this.chart.toBase64Image('image/png', 1);
+    link.href = dataUrl;
+    link.style.display = 'none';
+    document.body.appendChild(link);
     link.click();
+    setTimeout(() => document.body.removeChild(link), 500);
   }
 }
 
