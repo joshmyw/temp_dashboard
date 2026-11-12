@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="dropGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  
+  <!-- Rounded App Icon Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  
+  <!-- Inner Glow Card -->
+  <rect x="36" y="36" width="440" height="440" rx="90" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="6" />
+
+  <!-- Thermometer and Droplet Symbol Group -->
+  <g filter="url(#shadow)">
+    <!-- Thermometer (Left) -->
+    <g transform="translate(140, 96)">
+      <!-- Outer Tube -->
+      <path d="M40 0 C22 0 8 14 8 32 L8 180 C-14 200 -24 230 -16 260 C-4 298 32 320 70 310 C102 300 120 270 112 236 C108 206 90 186 72 180 L72 32 C72 14 58 0 40 0 Z" fill="#ffffff" />
+      <!-- Inner Tube Fluid -->
+      <path d="M40 18 C30 18 22 26 22 36 L22 192 A52 52 0 1 0 58 192 L58 36 C58 26 50 18 40 18 Z" fill="#e2e8f0" />
+      <!-- Liquid Mercury / Warm Gradient -->
+      <circle cx="40" cy="246" r="34" fill="url(#flameGrad)" />
+      <rect x="32" y="100" width="16" height="130" rx="8" fill="url(#flameGrad)" />
+      <!-- Gauge ticks -->
+      <line x1="26" y1="60" x2="34" y2="60" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" />
+      <line x1="26" y1="90" x2="36" y2="90" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" />
+      <line x1="26" y1="120" x2="34" y2="120" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" />
+      <line x1="26" y1="150" x2="36" y2="150" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" />
+    </g>
+
+    <!-- Water Droplet (Right) -->
+    <g transform="translate(300, 150)">
+      <path d="M60 0 C60 0 120 90 120 150 C120 205 75 240 60 240 C45 240 0 205 0 150 C0 90 60 0 60 0 Z" fill="url(#dropGrad)" stroke="#ffffff" stroke-width="8" />
+      <!-- Droplet highlight -->
+      <path d="M36 120 C32 140 40 170 54 180" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.6" />
+    </g>
+  </g>
+</svg>
